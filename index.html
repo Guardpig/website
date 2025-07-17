@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Number List</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        input[type="number"] { font-size: 1.2em; }
+        button { font-size: 1.2em; }
+        ul { font-size: 1.5em; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <h1>Number List</h1>
+    <input type="number" id="numberInput" placeholder="Enter a number">
+    <button onclick="addNumber()">Add</button>
+    <ul id="numberList"></ul>
+
+    <script>
+        const numberInput = document.getElementById('numberInput');
+        const numberList = document.getElementById('numberList');
+
+        function addNumber() {
+            const value = numberInput.value;
+            if (value !== '') {
+                const li = document.createElement('li');
+                li.textContent = value;
+                numberList.insertBefore(li, numberList.firstChild);
+                numberInput.value = '';
+                numberInput.focus();
+            }
+        }
+
+        numberInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') addNumber();
+        });
+    </script>
+</body>
+</html>
