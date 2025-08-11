@@ -1,39 +1,357 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>guardpig28.fun</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 40px; }
-        input[type="number"] { font-size: 1.2em; }
-        button { font-size: 1.2em; }
-        ul { font-size: 1.5em; margin-top: 20px; }
-    </style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Tap the Photo — Fart Sound</title>
+  <style>
+    :root{
+      --bg:#111;
+      --ui:#f3f3f3;
+      --muted:#bdbdbd;
+      --accent:#ffca28;
+    }
+    html,body{height:100%;margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;color:var(--ui);background:var(--bg);}
+    .wrap{min-height:100%;display:flex;flex-direction:column;gap:12px;padding:18px;box-sizing:border-box;}
+    header{display:flex;align-items:center;justify-content:space-between;gap:12px}
+    header h1{font-size:16px;margin:0;font-weight:600}
+    .controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    input[type="file"]{display:none}
+    .btn{
+      background:transparent;border:1px solid #333;padding:8px 12px;border-radius:10px;color:var(--ui);cursor:pointer;font-size:14px;
+    }
+    .btn:active{transform:translateY(1px)}
+    .preview{
+      margin-top:8px;
+      flex:1;
+      display:grid;
+      align-items:center;
+      justify-items:center;
+      border-radius:14px;
+      overflow:hidden;
+      background:linear-gradient(180deg,#0b0b0b,#171717);
+      box-shadow:0 6px 18px rgba(0,0,0,.6);
+      min-height:50vh;
+      position:relative;
+    }
+    .photo{
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      display:block;
+      cursor:pointer;
+      user-select:none;
+      -webkit-user-drag:none;
+    }
+    .hint{
+      position:absolute;left:12px;bottom:12px;background:rgba(0,0,0,0.45);padding:8px 10px;border-radius:10px;font-size:13px;color:var(--muted);
+    }
+    .small{font-size:13px;color:var(--muted)}
+    .row{display:flex;gap:8px;align-items:center}
+    label.range{display:flex;align-items:center;gap:8px}
+    input[type="range"]{cursor:pointer}
+    .fallback{margin-top:8px;color:var(--muted);font-size:13px}
+    footer{margin-top:12px;font-size:12px;color:var(--muted)}
+    @media (max-width:540px){
+      header{flex-direction:column;align-items:flex-start;gap:8px}
+    }
+  </style>
 </head>
 <body>
-    <h1>Number List</h1>
-    <input type="number" id="numberInput" placeholder="Enter a number">
-    <button onclick="addNumber()">Add</button>
-    <ul id="numberList"></ul>
+  <div class="wrap">
+    <header>
+      <h1>Tap the Photo — makes a fart sound</h1>
+      <div class="controls">
+        <label class="btn" title="Choose an image file">
+          Choose image
+          <input id="fileInput" type="file" accept="image/*">
+        </label>
+        <input id="urlInput" type="url" placeholder="Or paste image URL here" style="background:transparent;border:1px solid #333;padding:8px 10px;border-radius:10px;color:var(--ui);width:220px" />
+        <button id="useUrl" class="btn" title="Load URL">Load</button>
+        <button id="uploadAudio" class="btn" title="Optional: upload your own fart sound (mp3/wav)">Upload sound</button>
+      </div>
+    </header>
 
-    <script>
-        const numberInput = document.getElementById('numberInput');
-        const numberList = document.getElementById('numberList');
+    <div class="preview" id="preview">
+      <!-- Default placeholder image (data URL small) -->
+      <img id="photo" class="photo" src="data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'%3E%3Crect width='100%25' height='100%25' fill='%23171717'/%3E%3Ctext x='50%25' y='50%25' fill='%23bbbbbb' font-size='34' font-family='Arial' text-anchor='middle' dominant-baseline='middle'%3EClick or choose an image%3C/text%3E%3C/svg%3E" alt="Your photo (click to play sound)" />
+      <div class="hint" id="hint">Click or tap the picture to play a fart sound</div>
+    </div>
 
-        function addNumber() {
-            const value = numberInput.value;
-            if (value !== '') {
-                const li = document.createElement('li');
-                li.textContent = value;
-                numberList.insertBefore(li, numberList.firstChild);
-                numberInput.value = '';
-                numberInput.focus();
-            }
-        }
+    <div class="row small">
+      <label class="range">Volume
+        <input id="volume" type="range" min="0" max="1" step="0.01" value="0.7" />
+      </label>
+      <label class="range">Intensity
+        <input id="intensity" type="range" min="0.2" max="1.6" step="0.01" value="1.0" />
+      </label>
+      <button id="testBtn" class="btn">Test fart</button>
+      <button id="stopBtn" class="btn">Stop</button>
+    </div>
 
-        numberInput.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') addNumber();
+    <div class="fallback">
+      Tip: choose an image file or paste any image URL. On mobile, tap the picture. If your browser blocks sound until you interact, just tap once — the page will unlock audio.
+    </div>
+
+    <footer>
+      Built with Web Audio API — sound is synthesized (no external audio required). If you prefer to upload your own fart audio file, click "Upload sound".
+    </footer>
+  </div>
+
+  <input id="audioFileInput" type="file" accept="audio/*" style="display:none" />
+
+  <script>
+    // Elements
+    const fileInput = document.getElementById('fileInput');
+    const urlInput = document.getElementById('urlInput');
+    const useUrl = document.getElementById('useUrl');
+    const photo = document.getElementById('photo');
+    const preview = document.getElementById('preview');
+    const hint = document.getElementById('hint');
+    const volumeCtrl = document.getElementById('volume');
+    const intensityCtrl = document.getElementById('intensity');
+    const testBtn = document.getElementById('testBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const uploadAudio = document.getElementById('uploadAudio');
+    const audioFileInput = document.getElementById('audioFileInput');
+
+    // Audio
+    let audioCtx = null;
+    let masterGain = null;
+    let currentNodes = [];
+    let userAudioBuffer = null;
+
+    // Ensure audio context created on first user gesture
+    function ensureAudioCtx() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        masterGain = audioCtx.createGain();
+        masterGain.gain.value = parseFloat(volumeCtrl.value);
+        masterGain.connect(audioCtx.destination);
+      }
+    }
+
+    volumeCtrl.addEventListener('input', () => {
+      if (masterGain) masterGain.gain.value = parseFloat(volumeCtrl.value);
+    });
+
+    // File input -> show image
+    fileInput.addEventListener('change', e => {
+      const f = e.target.files && e.target.files[0];
+      if (!f) return;
+      const url = URL.createObjectURL(f);
+      setPhoto(url);
+    });
+
+    useUrl.addEventListener('click', () => {
+      const url = urlInput.value.trim();
+      if (!url) return alert('Paste an image URL first.');
+      setPhoto(url);
+    });
+
+    function setPhoto(src) {
+      photo.src = src;
+      photo.alt = 'Your selected photo (tap to play sound)';
+    }
+
+    // Clicking the photo plays the fart
+    photo.addEventListener('click', async (e) => {
+      // unlock audio context on mobile/ios
+      ensureAudioCtx();
+      if (audioCtx.state === 'suspended') {
+        try { await audioCtx.resume(); } catch(e) {}
+      }
+      // If user uploaded their own audio -> play that; otherwise synthesize
+      if (userAudioBuffer) {
+        playBuffer(userAudioBuffer);
+      } else {
+        playSynthFart();
+      }
+      // quick animated visual feedback
+      hint.textContent = 'Playing... (click again to play again)';
+      setTimeout(()=> hint.textContent = 'Click or tap the picture to play a fart sound', 1500);
+    });
+
+    // Simple play/stop buttons
+    testBtn.addEventListener('click', async () => {
+      ensureAudioCtx();
+      if (userAudioBuffer) playBuffer(userAudioBuffer);
+      else playSynthFart();
+    });
+    stopBtn.addEventListener('click', stopAll);
+
+    // Upload custom audio
+    uploadAudio.addEventListener('click', () => audioFileInput.click());
+    audioFileInput.addEventListener('change', async (e) => {
+      const f = e.target.files && e.target.files[0];
+      if (!f) return;
+      ensureAudioCtx();
+      const array = await f.arrayBuffer();
+      try {
+        userAudioBuffer = await audioCtx.decodeAudioData(array);
+        alert('Custom sound loaded — it will play when you tap the photo.');
+      } catch(err) {
+        console.error(err);
+        alert('Could not decode that audio file.');
+      }
+    });
+
+    // play an AudioBuffer
+    function playBuffer(buffer) {
+      stopAll();
+      const src = audioCtx.createBufferSource();
+      src.buffer = buffer;
+      const g = audioCtx.createGain();
+      g.gain.value = parseFloat(volumeCtrl.value);
+      src.connect(g);
+      g.connect(masterGain ? masterGain : audioCtx.destination);
+      src.start();
+      currentNodes.push(src, g);
+      src.onended = () => cleanupNodes(src, g);
+    }
+
+    function cleanupNodes(...nodes) {
+      nodes.forEach(n => {
+        const i = currentNodes.indexOf(n);
+        if (i !== -1) currentNodes.splice(i,1);
+        try { if (n.stop) n.stop(); } catch(e){}
+      });
+    }
+
+    function stopAll() {
+      while (currentNodes.length) {
+        const node = currentNodes.pop();
+        try {
+          if (node.stop) node.stop();
+          if (node.disconnect) node.disconnect();
+        } catch(e){}
+      }
+    }
+
+    // Synthesized fart using oscillator + filtered noise + pitch sweep + envelope
+    function playSynthFart() {
+      if (!audioCtx) ensureAudioCtx();
+      const t = audioCtx.currentTime;
+      stopAll();
+
+      const vol = parseFloat(volumeCtrl.value);
+      const intensity = parseFloat(intensityCtrl.value); // affects length / pitch
+
+      // -- oscillator for low "brap" body
+      const osc = audioCtx.createOscillator();
+      osc.type = 'sawtooth';
+      // starting frequency: low (60-120hz), end lower
+      const startFreq = 80 * (1 / intensity);
+      const endFreq = 40 * (1 / Math.max(0.6, intensity/1.1));
+      osc.frequency.setValueAtTime(startFreq, t);
+      // quick pitch drop
+      osc.frequency.exponentialRampToValueAtTime(Math.max(20,endFreq), t + 0.18 * intensity);
+
+      // bandpass to shape timbre
+      const bp = audioCtx.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.frequency.value = 200 * intensity;
+      bp.Q.value = 0.6;
+
+      // noise burst for the "squeak"
+      const noiseBuffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 1.2, audioCtx.sampleRate);
+      const data = noiseBuffer.getChannelData(0);
+      for (let i=0;i<data.length;i++){
+        data[i] = (Math.random()*2 -1) * Math.exp(-i / (audioCtx.sampleRate*0.18)); // decaying noise
+      }
+      const noise = audioCtx.createBufferSource();
+      noise.buffer = noiseBuffer;
+
+      const noiseFilter = audioCtx.createBiquadFilter();
+      noiseFilter.type = 'lowpass';
+      noiseFilter.frequency.value = 2000 * intensity;
+
+      // master gain for this event
+      const g = audioCtx.createGain();
+      g.gain.setValueAtTime(0.0001, t);
+      // envelope: quick swell then decay
+      const attack = 0.01;
+      const decay = 0.45 * intensity;
+      g.gain.exponentialRampToValueAtTime(Math.max(0.02, vol*0.9), t + attack);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + attack + decay);
+
+      // small sub-osc for body
+      const sub = audioCtx.createOscillator();
+      sub.type = 'sine';
+      sub.frequency.value = startFreq / 2;
+      sub.frequency.exponentialRampToValueAtTime(Math.max(10, endFreq/2), t + 0.22 * intensity);
+      const subGain = audioCtx.createGain();
+      subGain.gain.value = 0.025 * vol;
+
+      // connect nodes
+      osc.connect(bp);
+      bp.connect(g);
+
+      noise.connect(noiseFilter);
+      noiseFilter.connect(g);
+
+      sub.connect(subGain);
+      subGain.connect(g);
+
+      g.connect(masterGain);
+
+      // start / stop
+      osc.start(t);
+      noise.start(t);
+      sub.start(t);
+      // stop after envelope finishes
+      const stopTime = t + 0.8 * Math.max(0.8, intensity);
+      osc.stop(stopTime + 0.02);
+      noise.stop(stopTime);
+      sub.stop(stopTime + 0.02);
+
+      // add to currentNodes for stopping if user requests
+      currentNodes.push(osc, noise, sub, noiseFilter, bp, g, subGain);
+      // cleanup after ended
+      setTimeout(() => {
+        currentNodes = currentNodes.filter(n => {
+          try { if (n.disconnect) n.disconnect(); } catch(e) {}
+          return false;
         });
-    </script>
+      }, (stopTime - t + 0.1) * 1000);
+    }
+
+    // Prevent image dragging on mobile
+    photo.addEventListener('dragstart', (e)=> e.preventDefault());
+
+    // Accessibility: allow keyboard "enter" to play
+    photo.tabIndex = 0;
+    photo.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        photo.click();
+      }
+    });
+
+    // small safety: unlock audio context on first user gesture anywhere
+    document.addEventListener('click', async function unlockOnce() {
+      if (!audioCtx) {
+        ensureAudioCtx();
+        try { await audioCtx.resume(); } catch(e){}
+      }
+      document.removeEventListener('click', unlockOnce);
+    });
+
+    // Optional: support paste of image into page (Ctrl+V)
+    window.addEventListener('paste', (ev) => {
+      const items = (ev.clipboardData || ev.originalEvent.clipboardData).items;
+      for (const it of items) {
+        if (it.type.indexOf('image') !== -1) {
+          const blob = it.getAsFile();
+          const url = URL.createObjectURL(blob);
+          setPhoto(url);
+          break;
+        }
+      }
+    });
+
+    // Prevent context menu on long press for nicer UX
+    photo.addEventListener('contextmenu', (e) => e.preventDefault());
+  </script>
 </body>
 </html>
