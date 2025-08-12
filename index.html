@@ -2,8 +2,29 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>‎</title>
+  <title>Click for Fart</title>
   <style>
+video {
+  max-width: 90%;
+  max-height: 90%;
+  display: none; /* hidden until play */
+}
+button {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  padding: 12px 20px;
+  font-size: 16px;
+  border: none;
+  border-radius: 8px;
+  background-color: #ff4444;
+  color: white;
+  cursor: pointer;
+}
+button:hover {
+  background-color: #cc3333;
+}
+
     body {
       background: #222;
       display: flex;
@@ -32,5 +53,11 @@
     });
   </script>
 </body>
-</html>
+<video id="myVideo" controls>
+  <source src="https://archive.org/download/rogue.-one.-a.-star.-wars.-story.-2016.2160p.-uhd.-blu-ray.x-265.10bit.-hdr.-tru/Rogue.One.A.Star.Wars.Story.2016.2160p.UHD.BluRay.x265.10bit.HDR.TrueHD.7.1.Atmos-RARBG.mkv" type="video/mp4">
+  Your browser does not support the video tag.
+</video>
 
+<button id="playBtn">Play Video</button>
+
+</html>
